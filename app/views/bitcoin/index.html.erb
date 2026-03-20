@@ -1,0 +1,80 @@
+<div class="container">
+  <div class="card">
+    <h1>💰 Bitcoin</h1>
+
+    <select id="currency">
+      <option value="usd">USD</option>
+      <option value="brl" selected>BRL</option>
+      <option value="eur">EUR</option>
+    </select>
+
+    <div class="price" id="price">Carregando...</div>
+
+    <canvas id="chart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const ctx = document.getElementById('chart').getContext('2d')
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Preço BTC',
+        data: [],
+        tension: 0.3
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      }
+    }
+  })
+
+  function formatPrice(value, currency) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: currency.toUpperCase()
+    }).format(value)
+  }
+
+  async function fetchPrice() {
+    const currency = document.getElementById("currency").value
+
+    const response = await fetch(`/price?currency=${currency}`)
+    const data = await response.json()
+
+    const now = new Date().toLocaleTimeString()
+
+    if (chart.data.labels.length > 10) {
+      chart.data.labels.shift()
+      chart.data.datasets[0].data.shift()
+    }
+
+    chart.data.labels.push(now)
+    chart.data.datasets[0].data.push(data.price)
+
+    chart.update()
+
+    document.getElementById("price").innerText =
+      formatPrice(data.price, currency)
+  }
+
+  setInterval(fetchPrice, 5000)
+
+  document.getElementById("currency")
+    .addEventListener("change", () => {
+      chart.data.labels = []
+      chart.data.datasets[0].data = []
+      fetchPrice()
+    })
+
+  fetchPrice()
+</script>
