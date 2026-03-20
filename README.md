@@ -14,7 +14,7 @@ Aplicação web desenvolvida com Ruby on Rails que exibe o preço do Bitcoin em 
 
 ## 📸 Preview
 
-![preview](https://via.placeholder.com/800x400.png?text=Bitcoin+Monitor)
+https://bitcoin-monitor-wry6.onrender.com
 
 ---
 
