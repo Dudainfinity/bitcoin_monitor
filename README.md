@@ -1,24 +1,46 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+# 💰 Bitcoin Monitor
 
-Things you may want to cover:
+Aplicação web desenvolvida com Ruby on Rails que exibe o preço do Bitcoin em tempo real com gráficos dinâmicos.
 
-* Ruby version
+---
 
-* System dependencies
+## 🚀 Demo
 
-* Configuration
+🔗 Em breve (deploy online)
 
-* Database creation
+---
 
-* Database initialization
+## 📸 Preview
 
-* How to run the test suite
+![preview](https://via.placeholder.com/800x400.png?text=Bitcoin+Monitor)
 
-* Services (job queues, cache servers, search engines, etc.)
+---
 
-* Deployment instructions
+## ⚙️ Funcionalidades
 
-* ...
+- 📈 Visualização do preço do Bitcoin em tempo real
+- 🌐 Suporte a múltiplas moedas (USD, BRL, EUR)
+- 📊 Gráfico interativo com Chart.js
+- 🔄 Atualização automática a cada 5 segundos
+
+---
+
+## 🛠️ Tecnologias utilizadas
+
+- Ruby on Rails
+- JavaScript (Fetch API)
+- Chart.js
+- API CoinGecko
+
+---
+
+## ▶️ Como rodar o projeto
+
+```bash
+git clone https://github.com/Dudainfinity/bitcoin_monitor.git
+cd bitcoin_monitor
+
+bundle install
+rails s
