@@ -14,95 +14,168 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
 <script>
-let precos = [];
-let labels = [];
+(function() {
+  if (window.__btcMonitorCleanup) {
+    window.__btcMonitorCleanup();
+  }
 
-const ctx = document.getElementById('grafico').getContext('2d');
+  var precos = [];
+  var labels = [];
+  var grafico = null;
+  var intervalo = null;
+  var selectMoeda = document.getElementById('moeda');
+  var precoElemento = document.getElementById('preco');
 
-const grafico = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: labels,
-    datasets: [{
-      label: 'Preço BTC',
-      data: precos,
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderWidth: 2,
-      pointBackgroundColor: '#3b82f6',
-      tension: 0.3,
-      fill: true
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: {
-        labels: { color: '#ffffff' }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#94a3b8' },
-        grid: { color: 'rgba(255,255,255,0.05)' }
+  if (!selectMoeda || !precoElemento) return;
+
+  function limpar() {
+    if (intervalo) {
+      clearInterval(intervalo);
+      intervalo = null;
+    }
+    if (grafico) {
+      grafico.destroy();
+      grafico = null;
+    }
+  }
+
+  window.__btcMonitorCleanup = limpar;
+
+  function salvarUltimoPreco(moeda, preco) {
+    try {
+      localStorage.setItem('btc_preco_' + moeda, String(preco));
+    } catch (_) {
+    }
+  }
+
+  function lerUltimoPreco(moeda) {
+    try {
+      return localStorage.getItem('btc_preco_' + moeda);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function atualizarPreco() {
+    var moeda = selectMoeda.value;
+    fetch('/bitcoin/preco.json?moeda=' + moeda)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.erro && typeof data.preco === 'undefined') throw new Error(data.erro);
+        var formatado = new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: moeda.toUpperCase(),
+          minimumFractionDigits: 2
+        }).format(data.preco);
+
+        salvarUltimoPreco(moeda, data.preco);
+
+        if (data.warning === 'valor_em_cache') {
+          precoElemento.innerText = formatado + ' (cache)';
+        } else if (data.warning === 'fonte_secundaria') {
+          precoElemento.innerText = formatado + ' (secundária)';
+        } else if (data.warning === 'fallback_local') {
+          precoElemento.innerText = formatado + ' (fallback)';
+        } else {
+          precoElemento.innerText = formatado;
+        }
+
+        if (grafico) {
+          labels.push(new Date().toLocaleTimeString());
+          precos.push(data.preco);
+          if (precos.length > 10) { precos.shift(); labels.shift(); }
+          grafico.update();
+        }
+      })
+      .catch(function(e) {
+        var ultimo = lerUltimoPreco(moeda);
+        if (ultimo) {
+          var ultimoFormatado = new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: moeda.toUpperCase(),
+            minimumFractionDigits: 2
+          }).format(Number(ultimo));
+          precoElemento.innerText = ultimoFormatado + ' (último valor)';
+        } else {
+          precoElemento.innerText = 'Preço indisponível no momento';
+        }
+        console.error(e);
+      });
+  }
+
+  function iniciarGrafico() {
+    var canvas = document.getElementById('grafico');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    if (grafico) { grafico.destroy(); }
+
+    precos = [];
+    labels = [];
+
+    grafico = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Preço BTC',
+          data: precos,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#3b82f6',
+          tension: 0.3,
+          fill: true
+        }]
       },
-      y: {
-        ticks: { color: '#94a3b8' },
-        grid: { color: 'rgba(255,255,255,0.05)' }
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#ffffff' } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
       }
-    }
+    });
+
+    atualizarPreco();
   }
-});
 
-async function atualizarPreco() {
-  try {
-    const moeda = document.getElementById("moeda").value;
-
-    const response = await fetch(`/bitcoin/preco.json?moeda=${moeda}`);
-    const data = await response.json();
-
-    if (data.erro) throw new Error(data.erro);
-
-    const preco = data.preco;
-
-    const formatado = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: moeda.toUpperCase(),
-      minimumFractionDigits: 2
-    }).format(preco);
-
-    document.getElementById("preco").innerText = formatado;
-
-    const agora = new Date().toLocaleTimeString();
-
-    labels.push(agora);
-    precos.push(preco);
-
-    if (precos.length > 10) {
-      precos.shift();
-      labels.shift();
+  function carregarChart() {
+    if (typeof Chart !== 'undefined') {
+      iniciarGrafico();
+      return;
     }
 
-    grafico.update();
-  } catch (error) {
-    document.getElementById("preco").innerText = "Erro ao buscar preço";
-    console.error(error);
+    if (document.getElementById('chartjs-cdn')) {
+      return;
+    }
+
+    var script = document.createElement('script');
+    script.id = 'chartjs-cdn';
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.onload = iniciarGrafico;
+    script.onerror = function() {
+      console.warn('Chart.js indisponível: gráfico desativado, preço continua atualizado.');
+    };
+    document.head.appendChild(script);
   }
-}
 
-atualizarPreco();
-setInterval(atualizarPreco, 10000);
+  selectMoeda.onchange = function() {
+    precos = [];
+    labels = [];
+    if (grafico) {
+      grafico.data.labels = labels;
+      grafico.data.datasets[0].data = precos;
+      grafico.update();
+    }
+    atualizarPreco();
+  };
 
-document.getElementById("moeda").addEventListener("change", () => {
-  precos = [];
-  labels = [];
-  grafico.data.labels = labels;
-  grafico.data.datasets[0].data = precos;
-  grafico.update();
   atualizarPreco();
-});
+  intervalo = setInterval(atualizarPreco, 30000);
+  carregarChart();
+
+  document.addEventListener('turbo:before-cache', limpar, { once: true });
+})();
 </script>
