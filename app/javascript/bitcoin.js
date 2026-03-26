@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.warning === "valor_em_cache") {
         precoElemento.textContent = `${formatado} (cache)`;
       } else if (data.warning === "fonte_secundaria") {
-        precoElemento.textContent = `${formatado} (secundária)`;
+        precoElemento.textContent = formatado;
       } else {
         precoElemento.textContent = formatado;
       }
