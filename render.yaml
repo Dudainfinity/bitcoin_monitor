@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: bitcoin-monitor
+    runtime: ruby
+    buildCommand: "./bin/render-build.sh"
+    startCommand: "bundle exec rails server -p $PORT -e production"
+    healthCheckPath: /up
+    disk:
+      name: sqlite-data
+      mountPath: /rails/storage
+      sizeGB: 1
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_SERVE_STATIC_FILES
+        value: "true"
+      - key: RAILS_LOG_TO_STDOUT
+        value: "true"
+      - key: RAILS_MASTER_KEY
+        sync: false
